@@ -3,12 +3,8 @@ name: Vercel Integration
 on:
   push:
     branches: [ main, develop ]
-    paths:
-      - 'student-tracking-app/**'
   pull_request:
     branches: [ main, develop ]
-    paths:
-      - 'student-tracking-app/**'
   workflow_dispatch:
 
 env:
