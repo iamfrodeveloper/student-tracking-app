@@ -29,32 +29,32 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
-            student-tracking-app/node_modules
+            node_modules
             ~/.npm
-          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('student-tracking-app/package-lock.json') }}
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Run ESLint
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run lint
 
       - name: Run TypeScript type checking
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run type-check
 
       - name: Check code formatting
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           if ! npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"; then
             echo "Code formatting issues found. Run 'npm run format' to fix."
@@ -81,24 +81,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
-            student-tracking-app/node_modules
+            node_modules
             ~/.npm
-          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('student-tracking-app/package-lock.json') }}
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Run ${{ matrix.test-type }} tests
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run test:${{ matrix.test-type }}
         env:
           CI: true
@@ -129,24 +129,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
-            student-tracking-app/node_modules
+            node_modules
             ~/.npm
-          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('student-tracking-app/package-lock.json') }}
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Run tests with coverage
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run test:coverage
         env:
           CI: true
@@ -161,7 +161,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Coverage Summary
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "$(cat coverage/coverage-summary.json | jq -r '.total | "**Lines:** \(.lines.pct)% | **Statements:** \(.statements.pct)% | **Functions:** \(.functions.pct)% | **Branches:** \(.branches.pct)%"')" >> $GITHUB_STEP_SUMMARY
@@ -182,30 +182,30 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
-            student-tracking-app/node_modules
+            node_modules
             ~/.npm
-          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('student-tracking-app/package-lock.json') }}
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ env.CACHE_KEY_PREFIX }}-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Build application
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run build
         env:
           NODE_ENV: production
 
       - name: Check build output
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           if [ ! -d ".next" ]; then
             echo "Build failed: .next directory not found"
@@ -219,8 +219,8 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            student-tracking-app/.next/
-            student-tracking-app/out/
+            .next/
+            out/
           retention-days: 7
 
   # Job 5: Security Scan
@@ -239,18 +239,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Run security audit
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm audit --audit-level=moderate
 
       - name: Run dependency check
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           npx better-npm-audit audit --level moderate || true
 

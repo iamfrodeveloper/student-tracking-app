@@ -37,19 +37,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Run quick tests
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run test:ci
         continue-on-error: ${{ github.event.inputs.force_deploy == 'true' }}
 
       - name: Build check
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run build
         env:
           NODE_ENV: production
@@ -86,24 +86,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project Artifacts
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
           NODE_ENV: production
 
       - name: Deploy to Vercel
         id: deploy
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "preview_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT

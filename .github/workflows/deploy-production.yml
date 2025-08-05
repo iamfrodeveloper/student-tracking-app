@@ -48,15 +48,15 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Get version
         id: version
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           VERSION=$(jq -r '.version' package.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -64,14 +64,14 @@ jobs:
 
       - name: Run comprehensive tests
         if: github.event.inputs.skip_tests != 'true'
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## 🧪 Running Comprehensive Tests" >> $GITHUB_STEP_SUMMARY
           npm run test:ci
           echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
 
       - name: Security audit
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
           if npm audit --audit-level=high; then
@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Build verification
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## 🏗️ Build Verification" >> $GITHUB_STEP_SUMMARY
           npm run build
@@ -124,24 +124,21 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
-        working-directory: ./student-tracking-app
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project Artifacts
-        working-directory: ./student-tracking-app
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           NODE_ENV: production
 
       - name: Deploy to Production
         id: deploy
-        working-directory: ./student-tracking-app
         run: |
           DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "production_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT

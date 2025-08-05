@@ -30,14 +30,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Analyze dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## Dependency Analysis" >> $GITHUB_STEP_SUMMARY
           echo "### Package Count" >> $GITHUB_STEP_SUMMARY
@@ -46,7 +46,7 @@ jobs:
           echo "- **Development dependencies:** $(jq '.devDependencies | length' package.json)" >> $GITHUB_STEP_SUMMARY
 
       - name: Check for outdated packages
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "### Outdated Packages" >> $GITHUB_STEP_SUMMARY
           if npm outdated --json > outdated.json 2>/dev/null; then
@@ -60,7 +60,7 @@ jobs:
           fi
 
       - name: License compliance check
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "### License Compliance" >> $GITHUB_STEP_SUMMARY
           npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD' || echo "⚠️ License compliance issues found" >> $GITHUB_STEP_SUMMARY
@@ -89,20 +89,20 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Build application
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run build
         env:
           NODE_ENV: production
 
       - name: Test build output
-        working-directory: ./student-tracking-app
+        working-directory: .
         shell: bash
         run: |
           if [ ! -d ".next" ]; then
@@ -134,14 +134,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Run npm audit
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
           if npm audit --audit-level=moderate --json > audit-results.json; then
@@ -152,7 +152,7 @@ jobs:
           fi
 
       - name: Enhanced security audit
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "### Enhanced Security Scan" >> $GITHUB_STEP_SUMMARY
           if npx better-npm-audit audit --level moderate; then
@@ -185,24 +185,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Install bundle analyzer
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm install --save-dev @next/bundle-analyzer
 
       - name: Build with bundle analysis
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: ANALYZE=true npm run build
         env:
           NODE_ENV: production
 
       - name: Bundle size analysis
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## Bundle Analysis" >> $GITHUB_STEP_SUMMARY
           
@@ -224,7 +224,7 @@ jobs:
         with:
           name: bundle-analysis
           path: |
-            student-tracking-app/.next/analyze/
+            .next/analyze/
           retention-days: 7
 
   # Job 5: Performance Baseline
@@ -242,20 +242,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'student-tracking-app/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm ci
 
       - name: Build application
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: npm run build
         env:
           NODE_ENV: production
 
       - name: Start application
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           npm start &
           APP_PID=$!
@@ -265,7 +265,7 @@ jobs:
           timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done' || true
 
       - name: Basic performance check
-        working-directory: ./student-tracking-app
+        working-directory: .
         run: |
           echo "## Performance Baseline" >> $GITHUB_STEP_SUMMARY
           
