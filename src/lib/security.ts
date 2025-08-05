@@ -4,7 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
 
 // Rate limiting configuration
 interface RateLimitConfig {

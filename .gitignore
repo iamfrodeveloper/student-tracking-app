@@ -67,3 +67,5 @@ Thumbs.db
 
 # Development tools
 .eslintcache
+
+.vercel
