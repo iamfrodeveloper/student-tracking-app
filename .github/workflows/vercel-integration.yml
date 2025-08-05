@@ -1,0 +1,289 @@
+name: Vercel Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'student-tracking-app/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'student-tracking-app/**'
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: Vercel Preview Deployment (for PRs and feature branches)
+  preview-deployment:
+    name: Vercel Preview Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.preview_url }}
+      deployment_id: ${{ steps.deploy.outputs.deployment_id }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        working-directory: ./student-tracking-app
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        working-directory: ./student-tracking-app
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Vercel Preview
+        id: deploy
+        working-directory: ./student-tracking-app
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          DEPLOYMENT_ID=$(echo $DEPLOYMENT_URL | sed 's/.*-\([a-z0-9]*\)\.vercel\.app.*/\1/')
+          
+          echo "preview_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+          
+          echo "## 🚀 Preview Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URL:** $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Update PR with deployment info
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deploymentUrl = '${{ steps.deploy.outputs.preview_url }}';
+            const comment = `## 🚀 Vercel Preview Deployment
+            
+            **✅ Deployment successful!**
+            
+            **🔗 Preview URL:** ${deploymentUrl}
+            **📝 Commit:** ${{ github.sha }}
+            **🌿 Branch:** ${{ github.head_ref }}
+            
+            ### Quick Actions
+            - [🏠 View Application](${deploymentUrl})
+            - [🔍 Health Check](${deploymentUrl}/api/health)
+            - [📊 Vercel Dashboard](https://vercel.com/dashboard)
+            
+            This preview will be automatically updated when you push new commits.`;
+            
+            // Find existing comment to update or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.body.includes('🚀 Vercel Preview Deployment')
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+  # Job 2: Production Deployment (for main branch)
+  production-deployment:
+    name: Vercel Production Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      production_url: ${{ steps.deploy.outputs.production_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Run production checks
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## 🔍 Production Checks" >> $GITHUB_STEP_SUMMARY
+          
+          # Type checking
+          npm run type-check
+          echo "✅ TypeScript compilation successful" >> $GITHUB_STEP_SUMMARY
+          
+          # Linting
+          npm run lint
+          echo "✅ Code linting passed" >> $GITHUB_STEP_SUMMARY
+          
+          # Tests
+          npm run test:ci
+          echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        working-directory: ./student-tracking-app
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        working-directory: ./student-tracking-app
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Vercel Production
+        id: deploy
+        working-directory: ./student-tracking-app
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "production_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          
+          echo "## 🚀 Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Production URL:** $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** main" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Assign custom domain (if configured)
+        working-directory: ./student-tracking-app
+        run: |
+          if [ ! -z "${{ secrets.CUSTOM_DOMAIN }}" ]; then
+            vercel domains add ${{ secrets.CUSTOM_DOMAIN }} --token=${{ secrets.VERCEL_TOKEN }} || true
+            echo "**Custom Domain:** ${{ secrets.CUSTOM_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Job 3: Deployment Verification
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [preview-deployment, production-deployment]
+    if: always() && (needs.preview-deployment.result == 'success' || needs.production-deployment.result == 'success')
+    
+    steps:
+      - name: Determine deployment URL
+        id: url
+        run: |
+          if [ "${{ needs.production-deployment.result }}" == "success" ]; then
+            echo "deployment_url=${{ needs.production-deployment.outputs.production_url }}" >> $GITHUB_OUTPUT
+            echo "deployment_type=production" >> $GITHUB_OUTPUT
+          else
+            echo "deployment_url=${{ needs.preview-deployment.outputs.preview_url }}" >> $GITHUB_OUTPUT
+            echo "deployment_type=preview" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for deployment
+        run: |
+          echo "## ⏳ Deployment Verification" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** ${{ steps.url.outputs.deployment_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.url.outputs.deployment_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Waiting 30 seconds for deployment to be ready..." >> $GITHUB_STEP_SUMMARY
+          sleep 30
+
+      - name: Health check
+        run: |
+          DEPLOYMENT_URL="${{ steps.url.outputs.deployment_url }}"
+          
+          # Health endpoint check
+          for i in {1..5}; do
+            echo "Health check attempt $i/5..."
+            if curl -f "$DEPLOYMENT_URL/api/health" --max-time 30; then
+              echo "✅ **Health check:** PASSED" >> $GITHUB_STEP_SUMMARY
+              break
+            elif [ $i -eq 5 ]; then
+              echo "❌ **Health check:** FAILED" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              sleep 10
+            fi
+          done
+
+      - name: Basic functionality test
+        run: |
+          DEPLOYMENT_URL="${{ steps.url.outputs.deployment_url }}"
+          
+          # Test main page
+          if curl -f "$DEPLOYMENT_URL" --max-time 30 > /dev/null; then
+            echo "✅ **Main page:** ACCESSIBLE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Main page:** NOT ACCESSIBLE" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # Test response time
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' "$DEPLOYMENT_URL" || echo "N/A")
+          echo "**Response time:** ${RESPONSE_TIME}s" >> $GITHUB_STEP_SUMMARY
+
+  # Job 4: Cleanup and Notifications
+  cleanup:
+    name: Cleanup and Notifications
+    runs-on: ubuntu-latest
+    needs: [preview-deployment, production-deployment, verify-deployment]
+    if: always()
+    
+    steps:
+      - name: Deployment summary
+        run: |
+          echo "## 📋 Vercel Integration Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.production-deployment.result }}" == "success" ]; then
+            echo "**Production Deployment:** ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "**URL:** ${{ needs.production-deployment.outputs.production_url }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.preview-deployment.result }}" == "success" ]; then
+            echo "**Preview Deployment:** ✅ SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "**URL:** ${{ needs.preview-deployment.outputs.preview_url }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Deployment:** ❌ FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.verify-deployment.result }}" == "success" ]; then
+            echo "**Verification:** ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Verification:** ❌ FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Cleanup old deployments
+        if: github.event_name == 'pull_request' && github.event.action == 'closed'
+        run: |
+          echo "## 🧹 Cleanup" >> $GITHUB_STEP_SUMMARY
+          echo "PR closed - preview deployments will be automatically cleaned up by Vercel" >> $GITHUB_STEP_SUMMARY

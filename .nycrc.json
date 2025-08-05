@@ -1,0 +1,42 @@
+{
+  "extends": "@istanbuljs/nyc-config-typescript",
+  "all": true,
+  "check-coverage": true,
+  "reporter": [
+    "text",
+    "text-summary",
+    "html",
+    "lcov",
+    "json",
+    "cobertura"
+  ],
+  "report-dir": "coverage",
+  "temp-dir": ".nyc_output",
+  "exclude": [
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/public/**",
+    "**/docs/**",
+    "**/__tests__/**",
+    "**/*.stories.*",
+    "**/jest.config.js",
+    "**/jest.setup.js",
+    "**/next.config.*",
+    "**/tailwind.config.*",
+    "**/postcss.config.*"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "branches": 75,
+  "lines": 80,
+  "functions": 75,
+  "statements": 80
+}

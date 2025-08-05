@@ -1,0 +1,299 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - hotfix
+      skip_tests:
+        description: 'Skip tests (emergency deployment only)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job 1: Pre-production validation
+  pre-production:
+    name: Pre-production Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      should_deploy: ${{ steps.validation.outputs.should_deploy }}
+      version: ${{ steps.version.outputs.version }}
+      commit_sha: ${{ steps.validation.outputs.commit_sha }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Get version
+        id: version
+        working-directory: ./student-tracking-app
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run comprehensive tests
+        if: github.event.inputs.skip_tests != 'true'
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## 🧪 Running Comprehensive Tests" >> $GITHUB_STEP_SUMMARY
+          npm run test:ci
+          echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Security audit
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          if npm audit --audit-level=high; then
+            echo "✅ No high-severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ High-severity vulnerabilities detected" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Build verification
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## 🏗️ Build Verification" >> $GITHUB_STEP_SUMMARY
+          npm run build
+          echo "✅ Production build successful" >> $GITHUB_STEP_SUMMARY
+        env:
+          NODE_ENV: production
+
+      - name: Validation result
+        id: validation
+        run: |
+          echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          if [[ "${{ job.status }}" == "success" || "${{ github.event.inputs.skip_tests }}" == "true" ]]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "## ✅ Pre-production Validation PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "Ready for production deployment" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            echo "## ❌ Pre-production Validation FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "Production deployment blocked" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Job 2: Production deployment
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: pre-production
+    if: needs.pre-production.outputs.should_deploy == 'true'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.production_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        working-directory: ./student-tracking-app
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        working-directory: ./student-tracking-app
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Production
+        id: deploy
+        working-directory: ./student-tracking-app
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "production_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "## 🚀 Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment URL:** $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.pre-production.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ needs.pre-production.outputs.commit_sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create deployment record
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              description: 'Production deployment v${{ needs.pre-production.outputs.version }}',
+              auto_merge: false,
+              required_contexts: []
+            });
+            
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'success',
+              environment_url: '${{ steps.deploy.outputs.production_url }}',
+              description: 'Production deployment successful'
+            });
+
+  # Job 3: Post-deployment monitoring
+  post-deployment:
+    name: Post-deployment Monitoring
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [pre-production, deploy-production]
+    if: needs.deploy-production.result == 'success'
+    
+    steps:
+      - name: Wait for deployment propagation
+        run: |
+          echo "## ⏳ Waiting for Deployment Propagation" >> $GITHUB_STEP_SUMMARY
+          echo "Allowing 60 seconds for global CDN propagation..." >> $GITHUB_STEP_SUMMARY
+          sleep 60
+
+      - name: Health monitoring
+        run: |
+          PRODUCTION_URL="${{ needs.deploy-production.outputs.production_url }}"
+          echo "## 🔍 Health Monitoring" >> $GITHUB_STEP_SUMMARY
+          
+          # Multiple health checks with retry
+          for i in {1..5}; do
+            echo "Health check attempt $i/5..."
+            if curl -f "$PRODUCTION_URL/api/health" --max-time 30; then
+              echo "✅ **Health check:** PASSED (attempt $i)" >> $GITHUB_STEP_SUMMARY
+              break
+            elif [ $i -eq 5 ]; then
+              echo "❌ **Health check:** FAILED after 5 attempts" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              sleep 10
+            fi
+          done
+
+      - name: Smoke tests
+        run: |
+          PRODUCTION_URL="${{ needs.deploy-production.outputs.production_url }}"
+          echo "### 🧪 Smoke Tests" >> $GITHUB_STEP_SUMMARY
+          
+          # Test main application
+          if curl -f "$PRODUCTION_URL" --max-time 30 > /dev/null; then
+            echo "✅ **Main application:** ACCESSIBLE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Main application:** NOT ACCESSIBLE" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # Test API endpoints
+          if curl -f "$PRODUCTION_URL/api/health" --max-time 30 > /dev/null; then
+            echo "✅ **API endpoints:** RESPONSIVE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **API endpoints:** NOT RESPONSIVE" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Performance baseline
+        run: |
+          PRODUCTION_URL="${{ needs.deploy-production.outputs.production_url }}"
+          echo "### ⚡ Performance Baseline" >> $GITHUB_STEP_SUMMARY
+          
+          # Measure response times
+          HEALTH_TIME=$(curl -o /dev/null -s -w '%{time_total}' "$PRODUCTION_URL/api/health" || echo "N/A")
+          MAIN_TIME=$(curl -o /dev/null -s -w '%{time_total}' "$PRODUCTION_URL" || echo "N/A")
+          
+          echo "- **Health endpoint:** ${HEALTH_TIME}s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Main page:** ${MAIN_TIME}s" >> $GITHUB_STEP_SUMMARY
+          
+          # Performance thresholds
+          if (( $(echo "$HEALTH_TIME > 2.0" | bc -l) )); then
+            echo "⚠️ **Warning:** Health endpoint response time > 2s" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Job 4: Rollback capability
+  rollback-check:
+    name: Rollback Capability Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [deploy-production, post-deployment]
+    if: always() && needs.deploy-production.result == 'success'
+    
+    steps:
+      - name: Rollback information
+        run: |
+          echo "## 🔄 Rollback Information" >> $GITHUB_STEP_SUMMARY
+          echo "**Current deployment:** ${{ needs.deploy-production.outputs.production_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.pre-production.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ needs.pre-production.outputs.commit_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Rollback Instructions" >> $GITHUB_STEP_SUMMARY
+          echo "If issues are detected, you can rollback using:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "vercel rollback --token=\$VERCEL_TOKEN" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Notification and cleanup
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [pre-production, deploy-production, post-deployment, rollback-check]
+    if: always()
+    
+    steps:
+      - name: Deployment summary
+        run: |
+          echo "## 📋 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** main" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.pre-production.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ needs.pre-production.outputs.commit_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.deploy-production.result }}" == "success" ]]; then
+            echo "**Status:** ✅ DEPLOYED" >> $GITHUB_STEP_SUMMARY
+            echo "**URL:** ${{ needs.deploy-production.outputs.production_url }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** ❌ FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.post-deployment.result }}" == "success" ]]; then
+            echo "**Monitoring:** ✅ HEALTHY" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.post-deployment.result }}" == "failure" ]]; then
+            echo "**Monitoring:** ❌ ISSUES DETECTED" >> $GITHUB_STEP_SUMMARY
+          fi

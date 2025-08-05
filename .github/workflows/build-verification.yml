@@ -1,0 +1,285 @@
+name: Build Verification & Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  CACHE_KEY_PREFIX: 'build-cache'
+
+jobs:
+  # Job 1: Dependency Analysis
+  dependency-analysis:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Analyze dependencies
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## Dependency Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "### Package Count" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total packages:** $(npm list --depth=0 2>/dev/null | grep -c '├\|└' || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Production dependencies:** $(jq '.dependencies | length' package.json)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Development dependencies:** $(jq '.devDependencies | length' package.json)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for outdated packages
+        working-directory: ./student-tracking-app
+        run: |
+          echo "### Outdated Packages" >> $GITHUB_STEP_SUMMARY
+          if npm outdated --json > outdated.json 2>/dev/null; then
+            if [ -s outdated.json ]; then
+              echo "⚠️ Some packages are outdated. Run \`npm outdated\` for details." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ All packages are up to date." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ All packages are up to date." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: License compliance check
+        working-directory: ./student-tracking-app
+        run: |
+          echo "### License Compliance" >> $GITHUB_STEP_SUMMARY
+          npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD' || echo "⚠️ License compliance issues found" >> $GITHUB_STEP_SUMMARY
+
+  # Job 2: Build Matrix Testing
+  build-matrix:
+    name: Build Matrix
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: ['18', '20']
+        exclude:
+          # Exclude Windows + Node 20 to save resources
+          - os: windows-latest
+            node-version: '20'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./student-tracking-app
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Test build output
+        working-directory: ./student-tracking-app
+        shell: bash
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "❌ Build failed: .next directory not found"
+            exit 1
+          fi
+          
+          # Check for essential build files
+          if [ ! -f ".next/BUILD_ID" ]; then
+            echo "❌ Build failed: BUILD_ID not found"
+            exit 1
+          fi
+          
+          echo "✅ Build successful on ${{ matrix.os }} with Node.js ${{ matrix.node-version }}"
+          echo "Build ID: $(cat .next/BUILD_ID)"
+
+  # Job 3: Security Vulnerability Scan
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          if npm audit --audit-level=moderate --json > audit-results.json; then
+            echo "✅ No moderate or high severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Security vulnerabilities detected:" >> $GITHUB_STEP_SUMMARY
+            npm audit --audit-level=moderate || true
+          fi
+
+      - name: Enhanced security audit
+        working-directory: ./student-tracking-app
+        run: |
+          echo "### Enhanced Security Scan" >> $GITHUB_STEP_SUMMARY
+          if npx better-npm-audit audit --level moderate; then
+            echo "✅ Enhanced audit passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Enhanced audit found issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-audit-results
+          path: |
+            student-tracking-app/audit-results.json
+          retention-days: 30
+
+  # Job 4: Bundle Analysis
+  bundle-analysis:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Install bundle analyzer
+        working-directory: ./student-tracking-app
+        run: npm install --save-dev @next/bundle-analyzer
+
+      - name: Build with bundle analysis
+        working-directory: ./student-tracking-app
+        run: ANALYZE=true npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Bundle size analysis
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## Bundle Analysis" >> $GITHUB_STEP_SUMMARY
+          
+          # Get build info
+          if [ -f ".next/build-manifest.json" ]; then
+            echo "### Build Information" >> $GITHUB_STEP_SUMMARY
+            echo "- **Build ID:** $(cat .next/BUILD_ID)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Build completed:** ✅" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check bundle sizes
+          if [ -d ".next/static" ]; then
+            TOTAL_SIZE=$(du -sh .next/static | cut -f1)
+            echo "- **Total static assets:** $TOTAL_SIZE" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundle-analysis
+          path: |
+            student-tracking-app/.next/analyze/
+          retention-days: 7
+
+  # Job 5: Performance Baseline
+  performance-baseline:
+    name: Performance Baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'student-tracking-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./student-tracking-app
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./student-tracking-app
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Start application
+        working-directory: ./student-tracking-app
+        run: |
+          npm start &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          
+          # Wait for app to start
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done' || true
+
+      - name: Basic performance check
+        working-directory: ./student-tracking-app
+        run: |
+          echo "## Performance Baseline" >> $GITHUB_STEP_SUMMARY
+          
+          # Test health endpoint response time
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:3000/api/health || echo "N/A")
+          echo "- **Health endpoint response time:** ${RESPONSE_TIME}s" >> $GITHUB_STEP_SUMMARY
+          
+          # Test main page response time
+          MAIN_RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:3000/ || echo "N/A")
+          echo "- **Main page response time:** ${MAIN_RESPONSE_TIME}s" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ ! -z "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi

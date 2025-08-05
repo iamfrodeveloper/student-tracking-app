@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /setup/
+
+# Host
+Host: https://student-tracking-app.vercel.app
+
+# Sitemaps
+Sitemap: https://student-tracking-app.vercel.app/sitemap.xml

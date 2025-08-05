@@ -1,0 +1,93 @@
+{
+  "name": "student-tracking-app",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:script": "node scripts/test.js",
+    "test:unit": "jest --testPathPatterns=__tests__ --passWithNoTests",
+    "test:integration": "jest --testPathPatterns=integration --passWithNoTests",
+    "test:components": "jest --testPathPatterns=components --passWithNoTests",
+    "test:api": "jest --testPathPatterns=api --passWithNoTests",
+    "test:debug": "jest --verbose --no-cache --passWithNoTests",
+    "test:update": "jest --updateSnapshot --passWithNoTests",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "build:analyze": "ANALYZE=true npm run build",
+    "postbuild": "next-sitemap",
+    "clean": "rm -rf .next out",
+    "vercel-build": "npm run build",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel"
+  },
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.15.0",
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-form": "^0.1.7",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.12",
+    "@radix-ui/react-toast": "^1.2.14",
+    "axios": "^1.11.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.536.0",
+    "next": "15.4.5",
+    "openai": "^5.11.0",
+    "pg": "^8.16.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "better-npm-audit": "^3.11.0",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.5",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jest-sonar-reporter": "^2.0.0",
+    "jest-watch-typeahead": "^3.0.1",
+    "next-sitemap": "^4.2.3",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4",
+    "ts-jest": "^29.4.1",
+    "tw-animate-css": "^1.3.6",
+    "typescript": "^5"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
