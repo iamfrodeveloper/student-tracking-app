@@ -79,7 +79,7 @@ A comprehensive AI-powered student management system with enterprise-grade CI/CD
 
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/yourusername/student-tracking-app.git
+git clone https://github.com/iamfrodeveloper/student-tracking-app.git
 cd student-tracking-app
 ```
 
@@ -284,8 +284,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Documentation**: Check our [docs](docs/) folder
-- **Issues**: [GitHub Issues](https://github.com/yourusername/student-tracking-app/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/student-tracking-app/discussions)
+- **Issues**: [GitHub Issues](https://github.com/iamfrodeveloper/student-tracking-app/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/iamfrodeveloper/student-tracking-app/discussions)
 - **Email**: support@yourdomain.com
 
 ---
