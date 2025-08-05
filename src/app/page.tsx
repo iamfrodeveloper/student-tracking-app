@@ -6,12 +6,12 @@ import dynamic from 'next/dynamic';
 // Dynamically import components to avoid SSR issues
 const SetupWizard = dynamic(() => import('@/components/setup/SetupWizard'), {
   ssr: false,
-  loading: () => <div style={{ padding: '20px', textAlign: 'center' }}>Loading Setup...</div>
+  loading: () => <div className="setup-loading">Loading Setup...</div>
 });
 
 const Dashboard = dynamic(() => import('@/components/Dashboard'), {
   ssr: false,
-  loading: () => <div style={{ padding: '20px', textAlign: 'center' }}>Loading Dashboard...</div>
+  loading: () => <div className="setup-loading">Loading Dashboard...</div>
 });
 
 export default function Home() {
@@ -53,24 +53,10 @@ export default function Home() {
   // Show loading state while checking setup status
   if (isSetupComplete === null) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#f9fafb',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '4px solid #e5e7eb',
-            borderTop: '4px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }}></div>
-          <p style={{ color: '#6b7280' }}>Loading...</p>
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Loading...</p>
         </div>
       </div>
     );

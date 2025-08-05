@@ -36,7 +36,8 @@ const nextConfig: NextConfig = {
       'default-src': ["'self'"],
       'script-src': [
         "'self'",
-        ...(isDevelopment ? ["'unsafe-eval'", "'unsafe-inline'"] : ["'unsafe-eval'"]),
+        "'unsafe-eval'",
+        "'unsafe-inline'", // Required for Next.js to work properly in production
         'https://vercel.live',
         'https://va.vercel-scripts.com'
       ],
