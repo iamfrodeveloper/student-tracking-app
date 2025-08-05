@@ -250,11 +250,16 @@ npm run test -- ChatInterface.test.tsx
 
 ## 📚 Documentation
 
-- **[Setup Guide](SETUP_GUIDE.md)**: Detailed setup instructions
-- **[API Documentation](docs/API.md)**: Complete API reference
-- **[Deployment Guide](DEPLOYMENT_GUIDE.md)**: Production deployment guide
-- **[Contributing Guide](docs/CONTRIBUTING.md)**: Development guidelines
-- **[Security Guide](SECURITY.md)**: Security best practices
+### 🚀 Quick Start
+- **[Development Quick Start](docs/development/quick-start.md)**: Get up and running in 5 minutes
+- **[Quick Deployment](docs/deployment/quick-deploy.md)**: Deploy to production in 10 minutes
+
+### 📖 Complete Documentation
+- **[Documentation Index](docs/README.md)**: Complete documentation overview
+- **[API Documentation](docs/api/README.md)**: Comprehensive API reference
+- **[Setup Guide](docs/guides/SETUP_GUIDE.md)**: Detailed setup instructions
+- **[Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)**: Production deployment guide
+- **[Security Guide](docs/security/SECURITY.md)**: Security best practices
 
 ## 🤝 Contributing
 
@@ -291,7 +296,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by [Your Name](https://github.com/yourusername)**
+**Made with ❤️ by [iamfrodeveloper](https://github.com/iamfrodeveloper)**
 
 ⭐ **Star this repository if you find it helpful!**
 
