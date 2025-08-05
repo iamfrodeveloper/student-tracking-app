@@ -1,7 +1,8 @@
+
 # 🎓 Student Tracking App
 
-[![Build Status](https://github.com/yourusername/student-tracking-app/workflows/CI/badge.svg)](https://github.com/yourusername/student-tracking-app/actions)
-[![Deploy Status](https://github.com/yourusername/student-tracking-app/workflows/Deploy%20to%20Production/badge.svg)](https://github.com/yourusername/student-tracking-app/actions)
+[![Build Status](https://github.com/iamfrodeveloper/student-tracking-app/workflows/CI/badge.svg)](https://github.com/iamfrodeveloper/student-tracking-app/actions)
+[![Deploy Status](https://github.com/iamfrodeveloper/student-tracking-app/workflows/Deploy%20to%20Production/badge.svg)](https://github.com/iamfrodeveloper/student-tracking-app/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-15.4.5-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
@@ -293,3 +294,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ by [Your Name](https://github.com/yourusername)**
 
 ⭐ **Star this repository if you find it helpful!**
+
