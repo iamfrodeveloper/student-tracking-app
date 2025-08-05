@@ -10,8 +10,13 @@ export default function Home() {
 
   useEffect(() => {
     // Check if setup is complete
-    const setupComplete = configManager.isSetupComplete();
-    setIsSetupComplete(setupComplete);
+    try {
+      const setupComplete = configManager.isSetupComplete();
+      setIsSetupComplete(setupComplete);
+    } catch (error) {
+      console.error('Error checking setup status:', error);
+      setIsSetupComplete(false);
+    }
   }, []);
 
   const handleSetupComplete = () => {
@@ -21,10 +26,24 @@ export default function Home() {
   // Show loading state while checking setup status
   if (isSetupComplete === null) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#f9fafb',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid #e5e7eb',
+            borderTop: '4px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#6b7280' }}>Loading...</p>
         </div>
       </div>
     );
