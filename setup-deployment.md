@@ -3,7 +3,7 @@
 ## Your Vercel Credentials
 ```
 VERCEL_TOKEN: wZZWTefw6XBQqFmkev5ojQgP
-VERCEL_ORG_ID: aditis-projects-430a9f30
+VERCEL_ORG_ID: team_aetBdPtsO96s17bY3hqe03Kt
 VERCEL_PROJECT_ID: prj_smfjJYZnzzrbijgHZJD8YoNM7Qdk
 ```
 
