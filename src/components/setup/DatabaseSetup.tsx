@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { AlertCircle, Database, CheckCircle, Loader2, Shield, Info } from 'lucide-react';
 import { DatabaseConfig } from '@/types/config';
 import { testDatabaseConnection } from '@/lib/config';
+import { ValidationInput, ValidationFeedback, ValidationStatus } from '@/components/ui/validation-feedback';
+import { validateNeonConnection, validateQdrantUrl, validateQdrantApiKey } from '@/lib/validation';
 
 interface DatabaseSetupProps {
   config: DatabaseConfig;
@@ -25,6 +27,17 @@ export default function DatabaseSetup({ config, onUpdate, onComplete }: Database
   }>({});
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Real-time validation states
+  const [validationStates, setValidationStates] = useState<{
+    neonConnection: { status: ValidationStatus; message?: string };
+    qdrantUrl: { status: ValidationStatus; message?: string };
+    qdrantApiKey: { status: ValidationStatus; message?: string };
+  }>({
+    neonConnection: { status: 'idle' },
+    qdrantUrl: { status: 'idle' },
+    qdrantApiKey: { status: 'idle' }
+  });
+
   const handleInputChange = (section: 'neon' | 'qdrant', field: string, value: string) => {
     const updatedConfig = {
       ...formData,
@@ -36,6 +49,64 @@ export default function DatabaseSetup({ config, onUpdate, onComplete }: Database
     setFormData(updatedConfig);
     onUpdate(updatedConfig);
   };
+
+  // Real-time validation functions
+  const validateNeonConnectionString = useCallback(async (connectionString: string) => {
+    setValidationStates(prev => ({
+      ...prev,
+      neonConnection: { status: 'validating', message: 'Validating connection string...' }
+    }));
+
+    const result = await validateNeonConnection(connectionString);
+
+    setValidationStates(prev => ({
+      ...prev,
+      neonConnection: {
+        status: result.success ? 'success' : 'error',
+        message: result.message
+      }
+    }));
+
+    return result;
+  }, []);
+
+  const validateQdrantUrlString = useCallback(async (url: string) => {
+    setValidationStates(prev => ({
+      ...prev,
+      qdrantUrl: { status: 'validating', message: 'Validating Qdrant URL...' }
+    }));
+
+    const result = await validateQdrantUrl(url);
+
+    setValidationStates(prev => ({
+      ...prev,
+      qdrantUrl: {
+        status: result.success ? 'success' : 'error',
+        message: result.message
+      }
+    }));
+
+    return result;
+  }, []);
+
+  const validateQdrantApiKeyString = useCallback(async (apiKey: string) => {
+    setValidationStates(prev => ({
+      ...prev,
+      qdrantApiKey: { status: 'validating', message: 'Validating API key...' }
+    }));
+
+    const result = await validateQdrantApiKey(apiKey);
+
+    setValidationStates(prev => ({
+      ...prev,
+      qdrantApiKey: {
+        status: result.success ? 'success' : 'error',
+        message: result.message
+      }
+    }));
+
+    return result;
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: string[] = [];
@@ -184,20 +255,19 @@ export default function DatabaseSetup({ config, onUpdate, onComplete }: Database
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="neon-connection">Connection String</Label>
-            <Textarea
-              id="neon-connection"
-              placeholder="postgresql://your_username:your_password@your_host:5432/your_database?sslmode=require"
-              value={formData.neon.connectionString}
-              onChange={(e) => handleInputChange('neon', 'connectionString', e.target.value)}
-              className="mt-1"
-              rows={3}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Paste your Neon connection string here. You can find this in your Neon dashboard.
-            </p>
-          </div>
+          <ValidationInput
+            label="Connection String"
+            value={formData.neon.connectionString}
+            onChange={(value) => handleInputChange('neon', 'connectionString', value)}
+            onValidate={validateNeonConnectionString}
+            placeholder="postgresql://your_username:your_password@your_host:5432/your_database?sslmode=require"
+            type="textarea"
+            required={true}
+            validationStatus={validationStates.neonConnection.status}
+            validationMessage={validationStates.neonConnection.message}
+            rows={3}
+            helpText="Paste your Neon connection string here. You can find this in your Neon dashboard."
+          />
 
           {connectionDetails && (
             <div className="bg-gray-50 p-3 rounded-md">
@@ -238,28 +308,31 @@ export default function DatabaseSetup({ config, onUpdate, onComplete }: Database
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="qdrant-url">Qdrant URL</Label>
-            <Input
-              id="qdrant-url"
-              placeholder="https://your-cluster.qdrant.io"
-              value={formData.qdrant.url}
-              onChange={(e) => handleInputChange('qdrant', 'url', e.target.value)}
-              className="mt-1"
-            />
-          </div>
+          <ValidationInput
+            label="Qdrant URL"
+            value={formData.qdrant.url}
+            onChange={(value) => handleInputChange('qdrant', 'url', value)}
+            onValidate={validateQdrantUrlString}
+            placeholder="https://your-cluster.qdrant.io"
+            type="text"
+            required={true}
+            validationStatus={validationStates.qdrantUrl.status}
+            validationMessage={validationStates.qdrantUrl.message}
+            helpText="Your Qdrant Cloud cluster URL. Find this in your Qdrant Cloud dashboard."
+          />
 
-          <div>
-            <Label htmlFor="qdrant-api-key">API Key</Label>
-            <Input
-              id="qdrant-api-key"
-              type="password"
-              placeholder="Your Qdrant API key"
-              value={formData.qdrant.apiKey}
-              onChange={(e) => handleInputChange('qdrant', 'apiKey', e.target.value)}
-              className="mt-1"
-            />
-          </div>
+          <ValidationInput
+            label="API Key"
+            value={formData.qdrant.apiKey}
+            onChange={(value) => handleInputChange('qdrant', 'apiKey', value)}
+            onValidate={validateQdrantApiKeyString}
+            placeholder="Your Qdrant API key"
+            type="password"
+            required={true}
+            validationStatus={validationStates.qdrantApiKey.status}
+            validationMessage={validationStates.qdrantApiKey.message}
+            helpText="Your Qdrant API key for authentication. Keep this secure and never share it."
+          />
 
           <div>
             <Label htmlFor="qdrant-collection">Collection Name (Optional)</Label>

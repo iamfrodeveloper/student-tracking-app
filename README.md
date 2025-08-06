@@ -9,6 +9,12 @@
 
 A comprehensive AI-powered student management system with enterprise-grade CI/CD pipeline, built with Next.js 15, TypeScript, and modern web technologies.
 
+## 🌐 **Live Production Application**
+
+**🚀 [https://student-tracking-app.vercel.app](https://student-tracking-app.vercel.app)**
+
+> **Status:** ✅ **LIVE AND FULLY FUNCTIONAL** - Enhanced with real-time validation, responsive design, and production-ready features.
+
 ## ✨ Features
 
 ### 🎯 Core Functionality

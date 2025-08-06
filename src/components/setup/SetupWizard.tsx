@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, Circle, AlertCircle } from 'lucide-react';
 import { SETUP_STEPS, AppConfig, DEFAULT_API_CONFIG } from '@/types/config';
 import { configManager } from '@/lib/config';
+import { ResponsiveCard, ResponsiveButton } from '@/components/ui/responsive-layout';
 import DatabaseSetup from './DatabaseSetup';
 import APISetup from './APISetup';
 import ConnectionTest from './ConnectionTest';
@@ -146,15 +147,26 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
             {/* Step Content */}
             <Tabs value={steps[currentStep].id} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 h-auto p-1">
                 {steps.map((step, index) => (
                   <TabsTrigger
                     key={step.id}
                     value={step.id}
                     onClick={() => setCurrentStep(index)}
                     disabled={index > currentStep && !steps[index - 1]?.completed}
+                    className="mobile-touch-target text-xs sm:text-sm px-2 py-3 sm:px-3 sm:py-2 flex flex-col sm:flex-row items-center gap-1 sm:gap-2"
                   >
-                    {step.title}
+                    <div className="flex items-center gap-1">
+                      {step.completed ? (
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
+                      ) : index === currentStep ? (
+                        <Circle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 fill-current" />
+                      ) : (
+                        <Circle className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                      )}
+                      <span className="hidden sm:inline">{step.title}</span>
+                    </div>
+                    <span className="sm:hidden text-center leading-tight">{step.title}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -190,31 +202,40 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </Tabs>
 
             {/* Navigation */}
-            <div className="flex justify-between mt-8">
-              <Button
+            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
+              <ResponsiveButton
                 variant="outline"
+                size="lg"
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                 disabled={currentStep === 0}
+                className="order-2 sm:order-1"
               >
                 Previous
-              </Button>
+              </ResponsiveButton>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
                 {currentStep < steps.length - 1 ? (
-                  <Button
+                  <ResponsiveButton
+                    variant="primary"
+                    size="lg"
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={!canProceedToNext()}
+                    fullWidth={true}
+                    className="sm:w-auto"
                   >
-                    Next
-                  </Button>
+                    Next Step
+                  </ResponsiveButton>
                 ) : (
-                  <Button
+                  <ResponsiveButton
+                    variant="primary"
+                    size="lg"
                     onClick={handleFinishSetup}
                     disabled={!allRequiredStepsComplete()}
-                    className="bg-green-600 hover:bg-green-700"
+                    fullWidth={true}
+                    className="sm:w-auto bg-green-600 hover:bg-green-700 focus:ring-green-500"
                   >
                     Complete Setup
-                  </Button>
+                  </ResponsiveButton>
                 )}
               </div>
             </div>

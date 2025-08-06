@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertCircle, Zap, CheckCircle, Loader2, Shield, Info, ExternalLink } from 'lucide-react';
 import { APIConfig, API_PROVIDERS } from '@/types/config';
 import { testAPIConnection } from '@/lib/config';
+import { ValidationInput, ValidationFeedback, ValidationStatus } from '@/components/ui/validation-feedback';
+import { validateGeminiApiKey, validateOpenAIApiKey } from '@/lib/validation';
 
 interface APISetupProps {
   config: APIConfig;
@@ -26,6 +28,15 @@ export default function APISetup({ config, onUpdate, onComplete }: APISetupProps
   }>({});
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Real-time validation states for API keys
+  const [apiValidationStates, setApiValidationStates] = useState<{
+    geminiApiKey: { status: ValidationStatus; message?: string };
+    openaiApiKey: { status: ValidationStatus; message?: string };
+  }>({
+    geminiApiKey: { status: 'idle' },
+    openaiApiKey: { status: 'idle' }
+  });
+
   const handleProviderChange = (service: 'transcription' | 'llm' | 'embeddings', provider: string) => {
     const updatedConfig = {
       ...formData,
@@ -39,6 +50,45 @@ export default function APISetup({ config, onUpdate, onComplete }: APISetupProps
     setFormData(updatedConfig);
     onUpdate(updatedConfig);
   };
+
+  // Real-time validation functions for API keys
+  const validateGeminiApiKeyString = useCallback(async (apiKey: string) => {
+    setApiValidationStates(prev => ({
+      ...prev,
+      geminiApiKey: { status: 'validating', message: 'Validating Google Gemini API key...' }
+    }));
+
+    const result = await validateGeminiApiKey(apiKey);
+
+    setApiValidationStates(prev => ({
+      ...prev,
+      geminiApiKey: {
+        status: result.success ? 'success' : 'error',
+        message: result.message
+      }
+    }));
+
+    return result;
+  }, []);
+
+  const validateOpenAIApiKeyString = useCallback(async (apiKey: string) => {
+    setApiValidationStates(prev => ({
+      ...prev,
+      openaiApiKey: { status: 'validating', message: 'Validating OpenAI API key...' }
+    }));
+
+    const result = await validateOpenAIApiKey(apiKey);
+
+    setApiValidationStates(prev => ({
+      ...prev,
+      openaiApiKey: {
+        status: result.success ? 'success' : 'error',
+        message: result.message
+      }
+    }));
+
+    return result;
+  }, []);
 
   const handleFieldChange = (service: 'transcription' | 'llm' | 'embeddings', field: string, value: string) => {
     const updatedConfig = {
@@ -322,18 +372,30 @@ export default function APISetup({ config, onUpdate, onComplete }: APISetupProps
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="llm-api-key">API Key</Label>
-            <Input
-              id="llm-api-key"
-              type="password"
-              placeholder="Your API key"
+          {formData.llm.provider !== 'custom' && (
+            <ValidationInput
+              label="API Key"
               value={formData.llm.apiKey}
-              onChange={(e) => handleFieldChange('llm', 'apiKey', e.target.value)}
-              className="mt-1"
-              disabled={formData.llm.provider === 'custom'}
+              onChange={(value) => handleFieldChange('llm', 'apiKey', value)}
+              onValidate={formData.llm.provider === 'google' ? validateGeminiApiKeyString :
+                         formData.llm.provider === 'openai' ? validateOpenAIApiKeyString :
+                         undefined}
+              placeholder={formData.llm.provider === 'google' ? 'AIzaSy...' :
+                          formData.llm.provider === 'openai' ? 'sk-...' :
+                          'Your API key'}
+              type="password"
+              required={true}
+              validationStatus={formData.llm.provider === 'google' ? apiValidationStates.geminiApiKey.status :
+                               formData.llm.provider === 'openai' ? apiValidationStates.openaiApiKey.status :
+                               'idle'}
+              validationMessage={formData.llm.provider === 'google' ? apiValidationStates.geminiApiKey.message :
+                                formData.llm.provider === 'openai' ? apiValidationStates.openaiApiKey.message :
+                                undefined}
+              helpText={formData.llm.provider === 'google' ? 'Your Google Gemini API key from Google AI Studio' :
+                       formData.llm.provider === 'openai' ? 'Your OpenAI API key from the OpenAI platform' :
+                       'Your API key for the selected provider'}
             />
-          </div>
+          )}
 
           {formData.llm.provider === 'custom' && (
             <div>

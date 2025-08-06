@@ -1,0 +1,111 @@
+{
+  "testSuite": "Student Tracking App Functionality Test",
+  "timestamp": "2025-08-05T18:38:19.112Z",
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "results": [
+    {
+      "test": "Page Load",
+      "url": "http://localhost:3002",
+      "status": "PASSED",
+      "httpStatus": 200,
+      "title": "Student Tracking App",
+      "timestamp": "2025-08-05T18:37:53.277Z"
+    },
+    {
+      "test": "Setup Wizard Display",
+      "status": "PASSED",
+      "elements": {
+        "title": true,
+        "setupCard": true,
+        "progressSteps": true,
+        "databaseTab": true,
+        "apiTab": true,
+        "buttonCount": 7,
+        "hasSetupText": true
+      },
+      "pagePreview": "Student Tracking App Setup\nLet's configure your application to get started\n1\nDatabase Configuration\n2\nAPI Configuration\n3\nTest Connections\n4\nSample Data\nOptional\nDatabase Configuration\nAPI Configuration\nTest Connections\nSample Data\nDatabase Configuration\n\nConfigure your Neon PostgreSQL and Qdrant ve",
+      "timestamp": "2025-08-05T18:37:53.593Z"
+    },
+    {
+      "test": "Database Configuration",
+      "status": "PASSED",
+      "fieldsFound": {
+        "qdrantUrlInput": true,
+        "qdrantKeyInput": true
+      },
+      "timestamp": "2025-08-05T18:38:10.604Z"
+    },
+    {
+      "test": "API Configuration",
+      "status": "PASSED",
+      "fieldsFound": {
+        "geminiKey": true
+      },
+      "timestamp": "2025-08-05T18:38:15.651Z"
+    },
+    {
+      "test": "Connection Testing",
+      "status": "PASSED",
+      "testButtonFound": true,
+      "timestamp": "2025-08-05T18:38:19.112Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "page-load",
+      "filename": "screenshot-page-load-2025-08-05T18-37-53-118Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-page-load-2025-08-05T18-37-53-118Z.png",
+      "timestamp": "2025-08-05T18-37-53-118Z"
+    },
+    {
+      "name": "setup-wizard-display",
+      "filename": "screenshot-setup-wizard-display-2025-08-05T18-37-53-312Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-setup-wizard-display-2025-08-05T18-37-53-312Z.png",
+      "timestamp": "2025-08-05T18-37-53-312Z"
+    },
+    {
+      "name": "before-database-config",
+      "filename": "screenshot-before-database-config-2025-08-05T18-37-53-595Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-before-database-config-2025-08-05T18-37-53-595Z.png",
+      "timestamp": "2025-08-05T18-37-53-595Z"
+    },
+    {
+      "name": "after-database-config",
+      "filename": "screenshot-after-database-config-2025-08-05T18-38-10-423Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-after-database-config-2025-08-05T18-38-10-423Z.png",
+      "timestamp": "2025-08-05T18-38-10-423Z"
+    },
+    {
+      "name": "before-api-config",
+      "filename": "screenshot-before-api-config-2025-08-05T18-38-10-605Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-before-api-config-2025-08-05T18-38-10-605Z.png",
+      "timestamp": "2025-08-05T18-38-10-605Z"
+    },
+    {
+      "name": "after-api-config",
+      "filename": "screenshot-after-api-config-2025-08-05T18-38-15-496Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-after-api-config-2025-08-05T18-38-15-496Z.png",
+      "timestamp": "2025-08-05T18-38-15-496Z"
+    },
+    {
+      "name": "before-connection-test",
+      "filename": "screenshot-before-connection-test-2025-08-05T18-38-15-652Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-before-connection-test-2025-08-05T18-38-15-652Z.png",
+      "timestamp": "2025-08-05T18-38-15-652Z"
+    },
+    {
+      "name": "after-connection-test",
+      "filename": "screenshot-after-connection-test-2025-08-05T18-38-18-945Z.png",
+      "filepath": "D:\\Projects\\RK-ai 1.0\\student-tracking-app\\test-screenshots\\screenshot-after-connection-test-2025-08-05T18-38-18-945Z.png",
+      "timestamp": "2025-08-05T18-38-18-945Z"
+    }
+  ],
+  "configuration": {
+    "appUrl": "http://localhost:3002",
+    "testEnvironment": "production"
+  }
+}
